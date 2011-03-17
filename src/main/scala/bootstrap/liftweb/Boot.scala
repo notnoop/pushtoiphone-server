@@ -9,6 +9,8 @@ import http._
 import sitemap._
 import Loc._
 
+import mapper._
+import com.judeapps.pushtoiphone.model.{Citation, User}
 
 /**
  * A class that's instantiated early and run.  It allows the application
@@ -21,7 +23,8 @@ class Boot {
 
     // Build SiteMap
     val entries = List(
-      Menu.i("Home") / "index", // the simple way to declare a menu
+      Menu.i("Home") / "index",
+      Menu.i("Send") / "send",
 
       // more complex because this menu allows anything in the
       // /static path to be visible
@@ -42,6 +45,25 @@ class Boot {
 
     // Force the request to be UTF-8
     LiftRules.early.append(_.setCharacterEncoding("UTF-8"))
+
+    LiftRules.statelessDispatchTable.append(com.judeapps.pushtoiphone.rest.PusherApi)
+
+    if (!DB.jndiJdbcConnAvailable_?) {
+      val vendor =
+        new StandardDBVendor(Props.get("db.driver") openOr "org.h2.Driver",
+                             Props.get("db.url") openOr
+                             "jdbc:h2:lift_proto.db;AUTO_SERVER=TRUE",
+                             Props.get("db.user"), Props.get("db.password"))
+
+      LiftRules.unloadHooks.append(vendor.closeAllConnections_! _)
+
+      DB.defineConnectionManager(DefaultConnectionIdentifier, vendor)
+    }
+
+    // Use Lift's Mapper ORM to populate the database
+    // you don't need to use Mapper to use Lift... use
+    // any ORM you want
+    Schemifier.schemify(true, Schemifier.infoF _, User, Citation)
 
   }
 }
