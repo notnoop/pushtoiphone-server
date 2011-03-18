@@ -23,7 +23,6 @@ object PusherApi extends RestHelper {
         password <- r.param("password") ?~ "Password parameter missing" ~> 400;
         token <- r.param("token") ?~ "IPhone Token parameter missing" ~> 400
       ) yield {
-        println("Password: " + password)
         val user = User.create.
             email(username).
             password(password).
@@ -35,7 +34,7 @@ object PusherApi extends RestHelper {
           user.save
           (("status" -> 0) ~ ("message" -> "User created") ~ ("user_id" -> user.id.is))
         } else {
-          (Empty ?~ "Test" ~> 400).map(_ + "m")
+          throw ResponseShortcutException.shortcutResponse(NotFoundResponse())
         }
       }
     }
